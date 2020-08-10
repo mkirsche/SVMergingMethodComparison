@@ -91,6 +91,8 @@ public class CompareMerges {
 			}
 		}
 		
+		double jaccard = 1.0 * both / (both + firstOnly + secondOnly);
+		
 		System.out.println("Intersample 1: " + graph1.intersample);
 		System.out.println("Intersample 2: " + graph2.intersample);
 		System.out.println("Intersample 1 only: " + firstOnly);
@@ -98,6 +100,8 @@ public class CompareMerges {
 		System.out.println("Intersample both: " + both);
 		System.out.println("Intrasample 1: " + graph1.intrasample);
 		System.out.println("Intrasample 2: " + graph2.intrasample);
+		
+		System.out.println("Jaccard: " + jaccard);
 	}
 	
 	static class AdjacencyList
