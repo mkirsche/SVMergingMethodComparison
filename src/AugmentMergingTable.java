@@ -102,7 +102,11 @@ public class AugmentMergingTable
 			{
 				if(v.ids.get(i).length() > 0)
 				{
-					componentMap[i].put(v.ids.get(i), variantList.size());
+					String[] ids = v.ids.get(i).split(";");
+					for(String id : ids)
+					{
+						componentMap[i].put(id, variantList.size());
+					}
 				}
 			}
 			
@@ -171,6 +175,8 @@ public class AugmentMergingTable
 		int maxStart = -1, minStart = -1, maxEnd = -1, minEnd = -1;
 		int start = -1, end = -1, len = -1;
 		
+		int numVars = 0;
+		
 		boolean isSpecific = false;
 		boolean isPrecise = false;
 		
@@ -182,14 +188,8 @@ public class AugmentMergingTable
 			String type = entry.getNormalizedType();
 			int len = entry.getLength();
 			
-			if(this.chr.length() > 0 && type.equals("TRA") && Math.abs(pos - this.start) > 100000)
-			{
-				System.out.println(chr+" "+this.chr+" "+pos+" "+end+" "+this.start+" "+this.end+" "+len+" "+this.len);
-			}
-			
 			if(type.equals("TRA") && this.chr.length() > 0 && !chr.equals(this.chr))
 			{
-				System.out.println("swapping");
 				chr = entry.getChr2();
 				int temp = pos;
 				pos = end;
@@ -252,6 +252,8 @@ public class AugmentMergingTable
 			{
 				isPrecise = true;
 			}
+			
+			numVars++;
 			
 		}
 		
@@ -326,6 +328,7 @@ public class AugmentMergingTable
 			res.append("\t" + "MAX_END");
 			res.append("\t" + "SPECIFIC_FLAG");
 			res.append("\t" + "PRECISE_FLAG");
+			res.append("\t" + "NUMVARS");
 			return res.toString();
 		}
 		
@@ -351,6 +354,7 @@ public class AugmentMergingTable
 			res.append("\t" + maxEnd);
 			res.append("\t" + (isSpecific ? 1 : 0));
 			res.append("\t" + (isPrecise ? 1 : 0));
+			res.append("\t" + numVars);
 			return res.toString();
 		}
 	}

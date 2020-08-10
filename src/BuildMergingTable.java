@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -19,6 +18,7 @@ public class BuildMergingTable
 	static String mode = "jasmine";
 	
 	static HashMap<String, Integer> sampleToIndex;
+	static HashMap<String, String>[] coordsToId;
 	
 	static void buildSampleMap() throws Exception
 	{
@@ -111,6 +111,37 @@ public class BuildMergingTable
 		System.out.println();
 	}
 	
+	/*
+	 * Builds a map from coordinates string (in format chr1_pos-chr2_end) to ID for each sample
+	 */
+	@SuppressWarnings("unchecked")
+	static void buildCoordsMap() throws Exception
+	{
+		Scanner filelistInput = new Scanner(new FileInputStream(new File(vcfFilelist)));
+		ArrayList<String> filelist = PipelineManager.getFilesFromList(vcfFilelist);
+		coordsToId = new HashMap[filelist.size()];
+		for(int i = 0; i<filelist.size(); i++)
+		{
+			coordsToId[i] = new HashMap<String, String>();
+			String vcf = filelist.get(i);
+			Scanner input = new Scanner(new FileInputStream(new File(vcf)));
+			while(input.hasNext())
+			{
+				String line = input.nextLine();
+				if(line.length() == 0 || line.startsWith("#"))
+				{
+					continue;
+				}
+				VcfEntry entry = new VcfEntry(line);
+				String coords = entry.getChromosome() + "_" + entry.getPos() + "-" +
+						entry.getInfo("CHR2") + "_" + entry.getEnd();
+				coordsToId[i].put(coords, entry.getId());
+			}
+			input.close();
+		}
+		filelistInput.close();
+	}
+	
 	public static void main(String[] args) throws Exception
 	{
 		parseArgs(args);
@@ -118,6 +149,11 @@ public class BuildMergingTable
 		if(mode.equals("svtools") || mode.equals("svimmer"))
 		{		
 			buildSampleMap();
+		}
+		
+		if(mode.equals("survivor"))
+		{
+			buildCoordsMap();
 		}
 		
 		ArrayList<String> filenames = PipelineManager.getFilesFromList(vcfFilelist);
@@ -201,7 +237,14 @@ public class BuildMergingTable
 				}
 				else
 				{
-					res.add(entry.tabTokens[9+i].split(":")[7]);
+					String[] coordsList = entry.tabTokens[9+i].split(":")[10].split(",");
+					StringBuilder idList = new StringBuilder("");
+					for(int j = 0; j<coordsList.length; j++)
+					{
+						if(j > 0) idList.append(';');
+						idList.append(coordsToId[i].get(coordsList[j]));
+					}
+					res.add(idList.toString());
 				}
 			}
 			
@@ -212,19 +255,26 @@ public class BuildMergingTable
 		{
 			String sname = entry.getInfo("SNAME");
 			String[] tokens = sname.split(",");
-			String[] answers = new String[sampleToIndex.size()];
-			Arrays.fill(answers, "");
+			StringBuilder[] answers = new StringBuilder[sampleToIndex.size()];
+			for(int i = 0; i<answers.length; i++)
+			{
+				answers[i] = new StringBuilder("");
+			}
 			for(String token : tokens)
 			{
 				int colonIdx = token.indexOf(':');
 				String sample = token.substring(0, colonIdx);
 				String id = token.substring(1 + colonIdx);
-				
-				answers[sampleToIndex.get(sample)] = id;
+				int sampleIndex = sampleToIndex.get(sample);
+				if(answers[sampleIndex].length() > 0)
+				{
+					answers[sampleIndex].append(';');
+				}
+				answers[sampleIndex].append(id);
 			}
 			
 			ArrayList<String> res = new ArrayList<String>();
-			for(String answer : answers) res.add(answer);
+			for(StringBuilder answer : answers) res.add(answer.toString());
 			return res;
 		}
 		
@@ -232,19 +282,26 @@ public class BuildMergingTable
 		{
 			String sname = entry.getInfo("MERGED_IDS");
 			String[] tokens = sname.split(",");
-			String[] answers = new String[sampleToIndex.size()];
-			Arrays.fill(answers, "");
+			StringBuilder[] answers = new StringBuilder[sampleToIndex.size()];
+			for(int i = 0; i<answers.length; i++)
+			{
+				answers[i] = new StringBuilder("");
+			}
 			for(String token : tokens)
 			{
 				int colonIdx = token.indexOf(':');
 				String sample = token.substring(0, colonIdx);
 				String id = token.substring(1 + colonIdx);
-				
-				answers[sampleToIndex.get(sample)] = id;
+				int sampleIndex = sampleToIndex.get(sample);
+				if(answers[sampleIndex].length() > 0)
+				{
+					answers[sampleIndex].append(';');
+				}
+				answers[sampleIndex].append(id);
 			}
 			
 			ArrayList<String> res = new ArrayList<String>();
-			for(String answer : answers) res.add(answer);
+			for(StringBuilder answer : answers) res.add(answer.toString());
 			return res;
 		}
 		
