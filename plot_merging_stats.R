@@ -26,7 +26,7 @@ suppvec_hist <- function(df, caller, outfile) {
     ggsave(outfile, width= 6, height = 8)
 }
 
-plot_table <- function(fn, outdir, prefix, caller){
+plot_table <- function(fn, outdir, prefix, caller, discvec){
 
   df <- read.table(fn, sep = "\t", header = TRUE)
 
@@ -99,7 +99,7 @@ plot_table <- function(fn, outdir, prefix, caller){
   df$startspan = df$MAX_START - df$MIN_START
   df$endspan = df$MAX_END - df$MIN_END
   
-  multi <- df %>% filter(SUPP > 1)
+  multi <- df %>% filter(NUMVARS > 1)
   
   allspans = c(multi$startspan, multi$endspan)
   allspans = round(log(allspans + 1, base = 2))
@@ -115,17 +115,48 @@ plot_table <- function(fn, outdir, prefix, caller){
 
   outfile <- paste(outdir, prefix, "_breakpointspanhist_", caller, ".png", sep="")
   ggsave(outfile, width= 8, height = 8)
+  
+  filtered = df %>% filter(SPECIFIC_FLAG == 1 & PRECISE_FLAG == 1 & SUPP_VEC == discvec)
+  filtered$caller <- caller
+  
+  totalcount <- sum(df$NUMVARS)
+  mergedcount <- nrow(df)
+  #return(c(filtered, totalcount, mergedcount))
+  return (list(filtered, totalcount, mergedcount))
 }
+
+plot_all_callers <- function(outdir, prefix, discvec){
+  jasmineresults <- plot_table(paste(outdir, prefix, ".jasmine_augmented.txt", sep = ""), outdir, prefix, "Jasmine", discvec)
+  survivorresults <- plot_table(paste(outdir, prefix, ".survivor_augmented.txt", sep = ""), outdir, prefix, "Survivor", discvec)
+  svtoolsresults <- plot_table(paste(outdir, prefix, ".svtools_augmented.txt", sep = ""), outdir, prefix, "svtools", discvec)
+  svimmerresults <- plot_table(paste(outdir, prefix, ".svimmer_augmented.txt", sep = ""), outdir, prefix, "svimmer", discvec)
+  
+  ncol(jasmineresults[0])
+  
+  discordant <- data.frame()
+  discordant <- rbind(discordant, jasmineresults[[1]])
+  discordant <- rbind(discordant, survivorresults[[1]])
+  discordant <- rbind(discordant, svtoolsresults[[1]])
+  discordant <- rbind(discordant, svimmerresults[[1]])
+  
+  totals <- c(jasmineresults[[2]], survivorresults[[2]], svtoolsresults[[2]], svimmerresults[[2]],
+              jasmineresults[[3]], survivorresults[[3]], svtoolsresults[[3]], svimmerresults[[3]])
+
+  disccounts <- discordant %>% group_by(caller) %>% summarise(counts=n(), sums=sum(NUMVARS))
+  #disccounts
+  totals
+}
+  
 
 #fn = "/home/mkirsche/eclipse-workspace/SvPopulationAnalysis/augment.txt"
 #fn = "/home/mkirsche/eclipse-workspace/SvPopulationAnalysis/survaugment.txt"
 #fn = "/home/mkirsche/eclipse-workspace/SvPopulationAnalysis/svtoolsaugment.txt"
 
+
 outdir = "/home/mkirsche/eclipse-workspace/SvPopulationAnalysis/"
 
-plot_table(paste(outdir, "test.jasmine_augmented.txt", sep = ""), outdir, "purccs", "Jasmine")
-plot_table(paste(outdir, "test.survivor_augmented.txt", sep = ""), outdir, "purccs", "Survivor")
-plot_table(paste(outdir, "test.svtools_augmented.txt", sep = ""), outdir, "purccs", "svtools")
-plot_table(paste(outdir, "test.svimmer_augmented.txt", sep = ""), outdir, "purccs", "svimmer")
+plot_all_callers(outdir, "pur_ccs", 100)
+plot_all_callers(outdir, "md50", 001)
+
 
 
