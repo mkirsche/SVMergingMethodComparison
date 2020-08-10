@@ -68,40 +68,64 @@ public class CompareMerges {
 	
 	static void compare() throws Exception
 	{
-		AdjacencyList graph1 = new AdjacencyList(table1Fn), graph2 = new AdjacencyList(table2Fn);
-		ArrayList<String[]> edges1 = graph1.allEdges(), edges2 = graph2.allEdges();
-		
-		int firstOnly = 0, secondOnly = 0, both = 0;
-		for(String[] edge : edges1)
+		ResultsPair rp = new ResultsPair(table1Fn, table2Fn);
+		rp.print();
+	}
+	
+	static class ResultsPair
+	{
+		int firstOnly = 0;
+		int secondOnly = 0;
+		int both = 0;
+		int inter1 = 0;
+		int inter2 = 0;
+		int intra1 = 0;
+		int intra2 = 0;
+		double jaccard = 0.0;
+		ResultsPair(String fn1, String fn2) throws Exception
 		{
-			if(!graph2.hasEdge(edge[0], edge[1]))
+			AdjacencyList graph1 = new AdjacencyList(fn1), graph2 = new AdjacencyList(fn2);
+			intra1 = graph1.intrasample;
+			intra2 = graph2.intrasample;
+			inter1 = graph1.intersample;
+			inter2 = graph2.intersample;
+			
+			ArrayList<String[]> edges1 = graph1.allEdges(), edges2 = graph2.allEdges();
+			
+			for(String[] edge : edges1)
 			{
-				firstOnly++;
+				if(!graph2.hasEdge(edge[0], edge[1]))
+				{
+					firstOnly++;
+				}
+				else
+				{
+					both++;
+				}
 			}
-			else
+			for(String[] edge : edges2)
 			{
-				both++;
+				if(!graph1.hasEdge(edge[0], edge[1]))
+				{
+					secondOnly++;
+				}
 			}
+			
+			jaccard = 1.0 * both / (both + firstOnly + secondOnly);
 		}
-		for(String[] edge : edges2)
+		
+		public void print()
 		{
-			if(!graph1.hasEdge(edge[0], edge[1]))
-			{
-				secondOnly++;
-			}
+			System.out.println("Intersample 1: " + inter1);
+			System.out.println("Intersample 2: " + inter2);
+			System.out.println("Intersample 1 only: " + firstOnly);
+			System.out.println("Intersample 2 only: " + secondOnly);
+			System.out.println("Intersample both: " + both);
+			System.out.println("Intrasample 1: " + intra1);
+			System.out.println("Intrasample 2: " + intra2);
+			
+			System.out.println("Jaccard: " + jaccard);
 		}
-		
-		double jaccard = 1.0 * both / (both + firstOnly + secondOnly);
-		
-		System.out.println("Intersample 1: " + graph1.intersample);
-		System.out.println("Intersample 2: " + graph2.intersample);
-		System.out.println("Intersample 1 only: " + firstOnly);
-		System.out.println("Intersample 2 only: " + secondOnly);
-		System.out.println("Intersample both: " + both);
-		System.out.println("Intrasample 1: " + graph1.intrasample);
-		System.out.println("Intrasample 2: " + graph2.intrasample);
-		
-		System.out.println("Jaccard: " + jaccard);
 	}
 	
 	static class AdjacencyList
