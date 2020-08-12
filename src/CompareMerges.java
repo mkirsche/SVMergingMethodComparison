@@ -1,19 +1,21 @@
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
 
 public class CompareMerges {
-	static String table1Fn = "";
-	static String table2Fn = "";
-		
+	static String[] tables;	
+	static String outPrefix = "";
 	/*
 	 * Parse command line arguments
 	 */
 	static void parseArgs(String[] args)
 	{
+		tables = new String[2];
+		tables[0] = tables[1] = "";
 		for(String arg : args)
 		{
 			int equalsIdx = arg.indexOf('=');
@@ -27,17 +29,25 @@ public class CompareMerges {
 				String val = arg.substring(1 + equalsIdx);
 				if(key.equalsIgnoreCase("file1"))
 				{
-					table1Fn = val;
+					tables[0] = val;
 				}
 				else if(key.equalsIgnoreCase("file2"))
 				{
-					table2Fn = val;
+					tables[1] = val;
+				}
+				else if(key.equalsIgnoreCase("files"))
+				{
+					tables = val.split(",");
+				}
+				else if(key.equalsIgnoreCase("out_prefix"))
+				{
+					outPrefix = val;
 				}
 			}
 			
 		}
 		
-		if(table1Fn.length() == 0 || table2Fn.length() == 0)
+		if(tables.length < 2 || tables[0].length() == 0 || tables[1].length() == 0)
 		{
 			usage();
 			System.exit(0);
@@ -54,9 +64,11 @@ public class CompareMerges {
 		System.out.println("Required args:");
 		System.out.println("  file1   (String) - first table file (a TSV built from the BuildMergingTable script)");
 		System.out.println("  file2   (String) - second table file");
+		System.out.println("  file1   (String) - comma-separated list of table files in place of file1 and file2 if there are more than two");
 
 		System.out.println();
 		System.out.println("Optional args:");
+		System.out.println("  out_prefix   (String) - file prefix for optionally outputting lists of joined variants for each subset of merging results");
 		System.out.println();
 	}
 	
@@ -68,8 +80,110 @@ public class CompareMerges {
 	
 	static void compare() throws Exception
 	{
-		ResultsPair rp = new ResultsPair(table1Fn, table2Fn);
+		ResultsSet rp = new ResultsSet(tables);
+
+		//ResultsPair rp = new ResultsPair(table1Fn, table2Fn);
 		rp.print();
+	}
+	
+	static class ResultsSet
+	{
+		HashMap<String, Integer> intersampleCountByCallerSupport;
+		HashMap<String, PrintWriter> outByCallerSupport;
+		int[] interCounts;
+		int[] intraCounts;
+		ResultsSet(String[] files) throws Exception
+		{
+			intersampleCountByCallerSupport = new HashMap<String, Integer>();
+			outByCallerSupport = new HashMap<String, PrintWriter>();
+			int n = files.length;
+			interCounts = new int[n];
+			intraCounts= new int[n];
+			AdjacencyList[] graphs = new AdjacencyList[n];
+			for(int i = 0; i<n; i++)
+			{
+				graphs[i] = new AdjacencyList(files[i]);
+				interCounts[i] = graphs[i].intersample;
+				intraCounts[i] = graphs[i].intrasample;
+			}
+			
+			for(int i = 0; i<n; i++)
+			{
+				ArrayList<String[]> edges = graphs[i].allEdges();
+				
+				for(String[] edge : edges)
+				{
+					StringBuilder suppVec = new StringBuilder("");
+					
+					boolean firstSample = true;
+					for(int j = 0; j<i; j++)
+					{
+						if(graphs[j].hasEdge(edge[0], edge[1]))
+						{
+							firstSample = false;
+						}
+						else suppVec.append("0");
+					}
+					
+					if(!firstSample)
+					{
+						continue;
+					}
+					
+					suppVec.append("1");
+					
+					for(int j = i+1; j<n; j++)
+					{
+						if(graphs[j].hasEdge(edge[0], edge[1]))
+						{
+							suppVec.append("1");
+						}
+						else suppVec.append("0");
+					}
+					
+					String svKey = suppVec.toString();
+					
+					if(!intersampleCountByCallerSupport.containsKey(svKey))
+					{
+						if(outPrefix.length() > 0)
+						{
+							outByCallerSupport.put(svKey, new PrintWriter(new File(outPrefix + "_" + svKey + ".txt")));
+							outByCallerSupport.get(svKey).println("SAMPLE1\tID1\tSAMPLE2\tID2");
+						}
+						intersampleCountByCallerSupport.put(svKey, 1);
+					}
+					else
+					{
+						intersampleCountByCallerSupport.put(svKey, 1 + intersampleCountByCallerSupport.get(svKey));
+					}
+					
+					if(outByCallerSupport.containsKey(svKey))
+					{
+						String[] id1 = AdjacencyList.decode(edge[0]);
+						String[] id2 = AdjacencyList.decode(edge[1]);
+						outByCallerSupport.get(svKey).println(id1[0]+"\t"+id1[1]+"\t"+id2[0]+"\t"+id2[1]);
+					}
+				}
+			}
+			
+			for(String s : outByCallerSupport.keySet())
+			{
+				outByCallerSupport.get(s).close();
+			}
+		}
+		
+		public void print()
+		{
+			for(int i = 0; i<intraCounts.length; i++)
+			{
+				System.out.println("Caller " + (i+1) + " intrasample: " + intraCounts[i]);
+				System.out.println("Caller " + (i+1) + " intersample: " + interCounts[i]);
+			}
+			for(String s : intersampleCountByCallerSupport.keySet())
+			{
+				System.out.println("Variants with caller vector " + s + ":" + intersampleCountByCallerSupport.get(s));
+			}
+		}
 	}
 	
 	static class ResultsPair
@@ -149,6 +263,10 @@ public class CompareMerges {
 				int n = tokens.length;
 				for(int i = 1; i<n; i++)
 				{
+					if(tokens[i].equals("."))
+					{
+						continue;
+					}
 					String[] idsFromSampleI = tokens[i].split(";");
 					intrasample += idsFromSampleI.length - 1;
 					for(String id1 : idsFromSampleI)
@@ -164,6 +282,10 @@ public class CompareMerges {
 						int node1 = idToNodeIndex.get(key1);
 						for(int j = 1; j<i; j++)
 						{
+							if(tokens[j].equals("."))
+							{
+								continue;
+							}
 							String[] idsFromSampleJ = tokens[j].split(";");
 							intersample += idsFromSampleJ.length;
 							for(String id2 : idsFromSampleJ)
@@ -177,6 +299,12 @@ public class CompareMerges {
 				}
 			}
 			input.close();
+		}
+		
+		static String[] decode(String id)
+		{
+			int underscoreIdx = id.indexOf('_');
+			return new String[] { id.substring(0, underscoreIdx), id.substring(1 + underscoreIdx) };
 		}
 		
 		boolean hasEdge(String id1, String id2)
