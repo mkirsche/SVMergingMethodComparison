@@ -86,7 +86,7 @@ public class BuildMergingTable
 			System.exit(0);
 		}
 		
-		if(!mode.equals("jasmine") && !mode.equals("survivor") && !mode.equals("svtools") && !mode.equals("svimmer"))
+		if(!mode.equals("jasmine") && !mode.equals("survivor") && !mode.equals("svtools") && !mode.equals("svimmer") && !mode.equals("jasmine_intra"))
 		{
 			usage();
 			System.exit(0);
@@ -215,6 +215,33 @@ public class BuildMergingTable
 				else
 				{
 					res.add(ids[idIndex]);
+					idIndex++;
+				}
+			}
+			
+			return res;
+		}
+		
+		if(mode.equals("jasmine_intra"))
+		{
+			String suppVec = entry.getInfo("SUPP_VEC");
+			String idList = entry.getInfo("INTRASAMPLE_IDLIST");
+			String[] ids = idList.split("\\.");
+			int n = suppVec.length();
+			
+			ArrayList<String> res = new ArrayList<String>();
+			
+			int idIndex = 0;
+			
+			for(int i = 0; i<n; i++)
+			{
+				if(suppVec.charAt(i) == '0')
+				{
+					res.add("");
+				}
+				else
+				{
+					res.add(ids[idIndex].replaceAll(",", ";"));
 					idIndex++;
 				}
 			}

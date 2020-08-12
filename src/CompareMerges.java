@@ -64,7 +64,7 @@ public class CompareMerges {
 		System.out.println("Required args:");
 		System.out.println("  file1   (String) - first table file (a TSV built from the BuildMergingTable script)");
 		System.out.println("  file2   (String) - second table file");
-		System.out.println("  file1   (String) - comma-separated list of table files in place of file1 and file2 if there are more than two");
+		System.out.println("  files   (String) - comma-separated list of table files in place of file1 and file2 if there are more than two");
 
 		System.out.println();
 		System.out.println("Optional args:");

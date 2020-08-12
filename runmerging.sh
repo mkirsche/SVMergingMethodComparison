@@ -72,6 +72,19 @@ then
 
 fi
 
+if [ ! -r $WORKINGDIR/$OUTPREFIX.jasmineintra_augmented.txt ]
+then
+
+    echo 'Running Jasmine (with intrasample)'
+    $JASMINE_PATH/jasmine --allow_intrasample file_list=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmineintra.vcf --use_end kd_tree_norm=1
+
+    #echo 'Tabulating Jasmine results'
+    java -cp $JASMINE_PATH/src:$BINDIR/src BuildMergingTable vcf_file=$WORKINGDIR/$OUTPREFIX.jasmineintra.vcf vcf_filelist=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_simple.txt mode=jasmine_intra
+
+    java -cp $JASMINE_PATH/src:$BINDIR/src AugmentMergingTable table_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_simple.txt vcf_filelist=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_augmented.txt
+
+fi
+
 if [ ! -r $WORKINGDIR/$OUTPREFIX.survivor_augmented.txt ]
 then
 
