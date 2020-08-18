@@ -13,6 +13,8 @@ public class ComparisonToBed {
 	static int PADDING = 100;
 	static boolean PRECISE = false;
 	static boolean SPECIFIC = false;
+	static boolean FIRST_PRECISE = false;
+	static boolean FIRST_SPECIFIC = false;
 	
 	static void parseArgs(String[] args)
 	{
@@ -28,6 +30,14 @@ public class ComparisonToBed {
 				else if(arg.toLowerCase().endsWith("specific"))
 				{
 					SPECIFIC = true;
+				}
+				if(arg.toLowerCase().endsWith("fp"))
+				{
+					FIRST_PRECISE = true;
+				}
+				else if(arg.toLowerCase().endsWith("fs"))
+				{
+					FIRST_SPECIFIC = true;
 				}
 			}
 			else
@@ -73,6 +83,8 @@ public class ComparisonToBed {
 		System.out.println("Optional args:");
 		System.out.println("  --specific - only include pairs where at least one variant has IS_SPECIFIC INFO field set to 1");
 		System.out.println("  --precise  - only include pairs where at least one variant has PRECISE as an INFO field");
+		System.out.println("  --fs       - only include pairs where the first variant has IS_SPECIFIC INFO field set to 1");
+		System.out.println("  --fp       - only include pairs where the first variant has PRECISE as an INFO field");
 
 		System.out.println();
 	}
@@ -122,6 +134,14 @@ public class ComparisonToBed {
 							continue;
 						}
 						if(PRECISE && !r1.precise && !r2.precise)
+						{
+							continue;
+						}
+						if(FIRST_SPECIFIC && !r1.specific)
+						{
+							continue;
+						}
+						if(FIRST_PRECISE && !r1.precise)
 						{
 							continue;
 						}

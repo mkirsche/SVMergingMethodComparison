@@ -76,7 +76,7 @@ if [ ! -r $WORKINGDIR/$OUTPREFIX.jasmineintra_augmented.txt ]
 then
 
     echo 'Running Jasmine (with intrasample)'
-    $JASMINE_PATH/jasmine --allow_intrasample file_list=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmineintra.vcf --use_end kd_tree_norm=1
+    $JASMINE_PATH/jasmine --allow_intrasample file_list=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmineintra.vcf kd_tree_norm=1 --use_end
 
     #echo 'Tabulating Jasmine results'
     java -cp $JASMINE_PATH/src:$BINDIR/src BuildMergingTable vcf_file=$WORKINGDIR/$OUTPREFIX.jasmineintra.vcf vcf_filelist=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_simple.txt mode=jasmine_intra

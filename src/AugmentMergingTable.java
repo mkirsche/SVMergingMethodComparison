@@ -175,10 +175,32 @@ public class AugmentMergingTable
 		int maxStart = -1, minStart = -1, maxEnd = -1, minEnd = -1;
 		int start = -1, end = -1, len = -1;
 		
+		int numPlusPlus = 0, numMinusMinus = 0, numPlusMinus = 0, numMinusPlus = 0;
+		
 		int numVars = 0;
 		
 		boolean isSpecific = false;
 		boolean isPrecise = false;
+		
+		boolean reducesDiscordance = false;
+		
+		void updateDiscordanceReduction(VcfEntry entry) throws Exception
+		{
+			boolean entrySpecific = false, entryPrecise = false;
+			if(entry.hasInfoField("IS_SPECIFIC") && entry.getInfo("IS_SPECIFIC").equals("1"))
+			{
+				entrySpecific = true;
+			}
+			
+			if(entry.tabTokens[7].contains(";PRECISE;") || entry.tabTokens[7].startsWith("PRECISE;"))
+			{
+				entryPrecise = true;
+			}
+			if(entrySpecific && entryPrecise)
+			{
+				reducesDiscordance = true;
+			}
+		}
 		
 		void integrateVariant(VcfEntry entry) throws Exception
 		{
@@ -241,6 +263,24 @@ public class AugmentMergingTable
 			else if(type.equals("DUP"))
 			{
 				numDup++;
+			}
+			
+			String strand = entry.getStrand();
+			if(strand.equals("++"))
+			{
+				numPlusPlus++;
+			}
+			else if(strand.equals("--"))
+			{
+				numMinusMinus++;
+			}
+			else if(strand.equals("+-"))
+			{
+				numPlusMinus++;
+			}
+			else if(strand.equals("-+"))
+			{
+				numMinusPlus++;
 			}
 			
 			if(entry.hasInfoField("IS_SPECIFIC") && entry.getInfo("IS_SPECIFIC").equals("1"))

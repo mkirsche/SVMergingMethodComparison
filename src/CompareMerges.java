@@ -9,6 +9,7 @@ import java.util.Scanner;
 public class CompareMerges {
 	static String[] tables;	
 	static String outPrefix = "";
+	static String lonePrefix = "";
 	/*
 	 * Parse command line arguments
 	 */
@@ -43,6 +44,10 @@ public class CompareMerges {
 				{
 					outPrefix = val;
 				}
+				else if(key.equalsIgnoreCase("lone_prefix"))
+				{
+					lonePrefix = val;
+				}
 			}
 			
 		}
@@ -69,6 +74,7 @@ public class CompareMerges {
 		System.out.println();
 		System.out.println("Optional args:");
 		System.out.println("  out_prefix   (String) - file prefix for optionally outputting lists of joined variants for each subset of merging results");
+		System.out.println("  lone_prefix  (String) - file prefix for optionally outputting lists of unjoined variants for each subset of merging results");
 		System.out.println();
 	}
 	
@@ -82,20 +88,24 @@ public class CompareMerges {
 	{
 		ResultsSet rp = new ResultsSet(tables);
 
-		//ResultsPair rp = new ResultsPair(table1Fn, table2Fn);
 		rp.print();
 	}
 	
 	static class ResultsSet
 	{
 		HashMap<String, Integer> intersampleCountByCallerSupport;
+		HashMap<String, Integer> loneCountByCallerSupport;
 		HashMap<String, PrintWriter> outByCallerSupport;
+		HashMap<String, PrintWriter> loneOutByCallerSupport;
 		int[] interCounts;
 		int[] intraCounts;
 		ResultsSet(String[] files) throws Exception
 		{
 			intersampleCountByCallerSupport = new HashMap<String, Integer>();
+			loneCountByCallerSupport = new HashMap<String, Integer>();
+
 			outByCallerSupport = new HashMap<String, PrintWriter>();
+			loneOutByCallerSupport = new HashMap<String, PrintWriter>();
 			int n = files.length;
 			interCounts = new int[n];
 			intraCounts= new int[n];
@@ -170,6 +180,67 @@ public class CompareMerges {
 			{
 				outByCallerSupport.get(s).close();
 			}
+			
+			for(int i = 0; i<n; i++)
+			{
+				HashMap<String, String> joinedIds = graphs[i].joinedIds;
+				
+				for(String id : joinedIds.keySet())
+				{
+					StringBuilder suppVec = new StringBuilder("");
+					
+					boolean firstSample = true;
+					for(int j = 0; j<i; j++)
+					{
+						if(graphs[j].joinedIds.containsKey(id))
+						{
+							firstSample = false;
+						}
+						else suppVec.append("1");
+					}
+					
+					if(!firstSample)
+					{
+						continue;
+					}
+					
+					suppVec.append("0");
+					
+					for(int j = i+1; j<n; j++)
+					{
+						if(graphs[j].joinedIds.containsKey(id))
+						{
+							suppVec.append("0");
+						}
+						else suppVec.append("1");
+					}
+					
+					String svKey = suppVec.toString();
+					
+					if(!loneOutByCallerSupport.containsKey(svKey) && lonePrefix.length() > 0)
+					{
+						loneOutByCallerSupport.put(svKey, new PrintWriter(new File(lonePrefix + "_" + svKey + ".txt")));
+						loneOutByCallerSupport.get(svKey).println("SAMPLE1\tID1\tSAMPLE2\tID2");
+						loneCountByCallerSupport.put(svKey, 1);
+					}
+					else
+					{
+						loneCountByCallerSupport.put(svKey, 1 + loneCountByCallerSupport.get(svKey));
+					}
+					
+					if(loneOutByCallerSupport.containsKey(svKey))
+					{
+						String[] loneId = AdjacencyList.decode(id);
+						String[] neighborId = AdjacencyList.decode(joinedIds.get(id));
+						loneOutByCallerSupport.get(svKey).println(loneId[0] + "\t" + loneId[1] + "\t" + neighborId[0] + "\t" + neighborId[1]);
+					}
+				}
+			}
+			
+			for(String s : loneOutByCallerSupport.keySet())
+			{
+				loneOutByCallerSupport.get(s).close();
+			}
 		}
 		
 		public void print()
@@ -181,64 +252,12 @@ public class CompareMerges {
 			}
 			for(String s : intersampleCountByCallerSupport.keySet())
 			{
-				System.out.println("Variants with caller vector " + s + ":" + intersampleCountByCallerSupport.get(s));
+				System.out.println("Merged pairs with caller vector " + s + ":" + intersampleCountByCallerSupport.get(s));
 			}
-		}
-	}
-	
-	static class ResultsPair
-	{
-		int firstOnly = 0;
-		int secondOnly = 0;
-		int both = 0;
-		int inter1 = 0;
-		int inter2 = 0;
-		int intra1 = 0;
-		int intra2 = 0;
-		double jaccard = 0.0;
-		ResultsPair(String fn1, String fn2) throws Exception
-		{
-			AdjacencyList graph1 = new AdjacencyList(fn1), graph2 = new AdjacencyList(fn2);
-			intra1 = graph1.intrasample;
-			intra2 = graph2.intrasample;
-			inter1 = graph1.intersample;
-			inter2 = graph2.intersample;
-			
-			ArrayList<String[]> edges1 = graph1.allEdges(), edges2 = graph2.allEdges();
-			
-			for(String[] edge : edges1)
+			for(String s : loneCountByCallerSupport.keySet())
 			{
-				if(!graph2.hasEdge(edge[0], edge[1]))
-				{
-					firstOnly++;
-				}
-				else
-				{
-					both++;
-				}
+				System.out.println("Unmerged variants with caller vector " + s + ":" + loneCountByCallerSupport.get(s));
 			}
-			for(String[] edge : edges2)
-			{
-				if(!graph1.hasEdge(edge[0], edge[1]))
-				{
-					secondOnly++;
-				}
-			}
-			
-			jaccard = 1.0 * both / (both + firstOnly + secondOnly);
-		}
-		
-		public void print()
-		{
-			System.out.println("Intersample 1: " + inter1);
-			System.out.println("Intersample 2: " + inter2);
-			System.out.println("Intersample 1 only: " + firstOnly);
-			System.out.println("Intersample 2 only: " + secondOnly);
-			System.out.println("Intersample both: " + both);
-			System.out.println("Intrasample 1: " + intra1);
-			System.out.println("Intrasample 2: " + intra2);
-			
-			System.out.println("Jaccard: " + jaccard);
 		}
 	}
 	
@@ -247,11 +266,13 @@ public class CompareMerges {
 		HashMap<String, Integer> idToNodeIndex;
 		HashMap<Integer, String> nodeIndexToId;
 		ArrayList<HashSet<Integer>> graph;
+		HashMap<String, String> joinedIds;
 		String[] header;
 		int intrasample = 0;
 		int intersample = 0;
 		AdjacencyList(String filename) throws Exception
 		{
+			joinedIds = new HashMap<String, String>();
 			idToNodeIndex = new HashMap<String, Integer>();
 			nodeIndexToId = new HashMap<Integer, String>();
 			graph = new ArrayList<HashSet<Integer>>();
@@ -293,6 +314,15 @@ public class CompareMerges {
 								String key2 = j + "_" + id2;
 								int node2 = idToNodeIndex.get(key2);
 								graph.get(node2).add(node1);
+								
+								if(!joinedIds.containsKey(key1))
+								{
+									joinedIds.put(key1, key2);
+								}
+								if(!joinedIds.containsKey(key2))
+								{
+									joinedIds.put(key2, key1);
+								}
 							}
 						}
 					}
