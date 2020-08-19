@@ -20,6 +20,7 @@ javac -cp $JASMINE_PATH/src $BINDIR/src/*.java
 # Command line parameters
 FILELIST=$1
 OUTPREFIX=$2
+DISCSUPPVEC=$3
 
 # Remove extension from filelist for lsmaking caller-specific versions of it
 filelist_noext=`echo "${FILELIST%.*}"`
@@ -131,3 +132,11 @@ then
     java -cp $JASMINE_PATH/src:$BINDIR/src AugmentMergingTable table_file=$WORKINGDIR/$OUTPREFIX.svimmer_simple.txt vcf_filelist=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.svimmer_augmented.txt
 
 fi
+
+echo 'Counting errors'
+ERRORSFILE=$WORKINGDIR/$OUTPREFIX.errors.txt
+java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.svtools_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=svtools disc_supp_vec=$DISCSUPPVEC
+java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.jasmine_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=jasmine disc_supp_vec=$DISCSUPPVEC --append
+java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=jasmineintra disc_supp_vec=$DISCSUPPVEC --append
+java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.survivor_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=survivor disc_supp_vec=$DISCSUPPVEC --append
+java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.svimmer_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=svimmer disc_supp_vec=$DISCSUPPVEC --append

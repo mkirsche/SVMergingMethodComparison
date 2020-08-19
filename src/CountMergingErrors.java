@@ -1,5 +1,8 @@
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -9,6 +12,9 @@ public class CountMergingErrors
 	static String tableFn = "";
 	static String vcfFilelist = "";
 	static String discSuppVec = "";
+	static String ofn = "";
+	static String software = ".";
+	static boolean append = false;
 		
 	/*
 	 * Parse command line arguments
@@ -20,7 +26,10 @@ public class CountMergingErrors
 			int equalsIdx = arg.indexOf('=');
 			if(equalsIdx == -1)
 			{
-				
+				if(arg.toLowerCase().endsWith("append"))
+				{
+					append = true;
+				}
 			}
 			else
 			{
@@ -37,6 +46,14 @@ public class CountMergingErrors
 				else if(key.equalsIgnoreCase("disc_supp_vec"))
 				{
 					discSuppVec = val;
+				}
+				else if(key.equalsIgnoreCase("out_file"))
+				{
+					ofn = val;
+				}
+				else if(key.equalsIgnoreCase("software"))
+				{
+					software = val;
 				}
 			}
 			
@@ -63,6 +80,9 @@ public class CountMergingErrors
 		System.out.println();
 		System.out.println("Optional args:");
 		System.out.println("  disc_supp_vec (String) - the support vector corresponding to discordant reads");
+		System.out.println("  out_file      (String) - where to write results in table format");
+		System.out.println("  software  [.] (String) - which merging software to list in the table (if table is produced)");
+		System.out.println("  --append               - append to an existing table instead of making a new one");
 		System.out.println();
 	}
 	
@@ -190,16 +210,45 @@ public class CountMergingErrors
 			
 		}
 		
+		System.out.println();
+		System.out.println("Errors for " + software);
+		
 		System.out.println("Mixed strand and type: " + badBoth);
 		System.out.println("Mixed strand only: " + badStrand);
 		System.out.println("Mixed type only: " + badType);
 		
 		if(discSuppVec.length() > 0)
 		{
-			System.out.println();
 			System.out.println("Mixed strand and type affecting discordance: " + badBothDiscordant);
 			System.out.println("Mixed strand only affecting discordance: " + badStrandDiscordant);
 			System.out.println("Mixed type only affecting discordance: " + badTypeDiscordant);
+		}
+		
+		System.out.println();
+		
+		if(ofn.length() > 0)
+		{
+			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(ofn, append)));
+			
+			// Print header if making a new table
+			if(!append)
+			{
+				out.print("SOFTWARE\tMIXED_STRAND_AND_TYPE\tMIXED_STRAND_ONLY\tMIXED_TYPE_ONLY");
+				if(discSuppVec.length() > 0)
+				{
+					out.print("\tDISC_MIXED_STRAND_AND_TYPE\tDISC_MIXED_STRAND_ONLY\tDISC_MIXED_TYPE_ONLY");
+				}
+				out.println();
+			}
+			
+			// Print statistics for this software
+			out.print(software + "\t" + badBoth + "\t" + badStrand + "\t" + badType);
+			if(discSuppVec.length() > 0)
+			{
+				out.print("\t" + badBothDiscordant + "\t" + badStrandDiscordant + "\t" + badTypeDiscordant);
+			}
+			out.println();
+			out.close();
 		}
 		
 	}
