@@ -1,0 +1,3 @@
+[submodule "Jasmine_utils"]
+	path = Jasmine_utils
+	url = https://github.com/aganezov/Jasmine_utils.git

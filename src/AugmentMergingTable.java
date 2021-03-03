@@ -139,7 +139,7 @@ public class AugmentMergingTable
 				}
 				else
 				{
-					System.out.println(i+" "+id);
+					//System.out.println(i+" "+id);
 				}
 			}
 		}
