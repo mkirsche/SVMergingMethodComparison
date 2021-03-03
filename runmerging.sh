@@ -10,11 +10,13 @@ WORKINGDIR=`pwd`
 
 # Locations of necessary software
 
-JASMINE_UTILS_PATH='/home/mkirsche/git/Jasmine_utils'
-JASMINE_PATH='/home/mkirsche/eclipse-workspace/Jasmine'
-SURVIVOR_PATH='/home/mkirsche/git/SURVIVOR'
-SVIMMER_PATH='/home/mkirsche/git/svimmer'
+JASMINE_UTILS_PATH=$BINDIR'/'Jasmine_utils
+JASMINE_PATH=$BINDIR'/'../../../Jasmine
+SURVIVOR_PATH=$BINDIR'/'../../../SURVIVOR
+SVIMMER_PATH=$BINDIR'/'../../figure5/svimmer
 
+javac $JASMINE_PATH/Iris/src/*.java
+javac -cp $JASMINE_PATH/Iris/src $JASMINE_PATH/src/*.java
 javac -cp $JASMINE_PATH/src $BINDIR/src/*.java
 
 # Command line parameters
@@ -25,8 +27,8 @@ DISCSUPPVEC=$3
 # Remove extension from filelist for lsmaking caller-specific versions of it
 filelist_noext=`echo "${FILELIST%.*}"`
 
-source /home/mkirsche/anaconda3/etc/profile.d/conda.sh
-conda activate py2
+#source /home/mkirsche/anaconda3/etc/profile.d/conda.sh
+#conda activate py2
 
 if [ ! -r $WORKINGDIR/$OUTPREFIX.svtools_augmented.txt ]
 then
@@ -64,7 +66,7 @@ if [ ! -r $WORKINGDIR/$OUTPREFIX.jasmine_augmented.txt ]
 then
 
     echo 'Running Jasmine'
-    $JASMINE_PATH/jasmine file_list=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmine.vcf
+    java -cp $JASMINE_PATH/Iris/src:$JASMINE_PATH/src Main file_list=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmine.vcf
 
     echo 'Tabulating Jasmine results'
     java -cp $JASMINE_PATH/src:$BINDIR/src BuildMergingTable vcf_file=$WORKINGDIR/$OUTPREFIX.jasmine.vcf vcf_filelist=$FILELIST out_file=$WORKINGDIR/$OUTPREFIX.jasmine_simple.txt mode=jasmine
@@ -120,7 +122,7 @@ then
       python $JASMINE_UTILS_PATH/sniffles2svimmer.py -o $outfile $filename
       tabix $outfile
     done
-    chrs='1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y MT'
+    chrs='chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM'
 
     echo 'Running svimmer'
     python $SVIMMER_PATH/svimmer $svimmerlist $chrs --threads 2 --output $WORKINGDIR/$OUTPREFIX.svimmer.vcf --max_distance 1000 --max_size_difference 1000 --ids
