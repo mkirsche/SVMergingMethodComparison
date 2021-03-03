@@ -7,6 +7,8 @@ else
 fi
 
 WORKINGDIR=`pwd`
+echo 'Working directory: '$WORKINGDIR
+echo $1 $2 $3
 
 # Locations of necessary software
 
@@ -24,7 +26,7 @@ FILELIST=$1
 OUTPREFIX=$2
 DISCSUPPVEC=$3
 
-# Remove extension from filelist for lsmaking caller-specific versions of it
+# Remove extension from filelist for making caller-specific versions of it
 filelist_noext=`echo "${FILELIST%.*}"`
 
 #source /home/mkirsche/anaconda3/etc/profile.d/conda.sh
@@ -49,7 +51,7 @@ then
     done
 
     echo 'Running svtools'
-    svtools lsort -f $svtoolslist > $WORKINGDIR/$OUTPREFIX.svtools.lsort.vcf
+    svtools lsort -r -f $svtoolslist > $WORKINGDIR/$OUTPREFIX.svtools.lsort.vcf
 
     svtools lmerge -i $WORKINGDIR/$OUTPREFIX.svtools.lsort.vcf -f 1000 > $WORKINGDIR/$OUTPREFIX.svtools.lmerge.vcf
 
@@ -122,8 +124,9 @@ then
       python $JASMINE_UTILS_PATH/sniffles2svimmer.py -o $outfile $filename
       tabix $outfile
     done
-    chrs='chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM'
-
+    #chrs='chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM'
+    chrs=`java -cp $BINDIR/src GetChromosomeNames $FILELIST`
+    echo 'Got chromosomes: '$chrs
     echo 'Running svimmer'
     python $SVIMMER_PATH/svimmer $svimmerlist $chrs --threads 2 --output $WORKINGDIR/$OUTPREFIX.svimmer.vcf --max_distance 1000 --max_size_difference 1000 --ids
 
@@ -135,10 +138,15 @@ then
 
 fi
 
-echo 'Counting errors'
-ERRORSFILE=$WORKINGDIR/$OUTPREFIX.errors.txt
-java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.svtools_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=svtools disc_supp_vec=$DISCSUPPVEC
-java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.jasmine_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=jasmine disc_supp_vec=$DISCSUPPVEC --append
-java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=jasmineintra disc_supp_vec=$DISCSUPPVEC --append
-java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.survivor_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=survivor disc_supp_vec=$DISCSUPPVEC --append
-java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.svimmer_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=svimmer disc_supp_vec=$DISCSUPPVEC --append
+if [ "$DISCSUPPVEC" != "0" ]
+then
+  echo 'Counting errors'
+  ERRORSFILE=$WORKINGDIR/$OUTPREFIX.errors.txt
+  java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.svtools_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=svtools disc_supp_vec=$DISCSUPPVEC
+  java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.jasmine_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=jasmine disc_supp_vec=$DISCSUPPVEC --append
+  java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.jasmineintra_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=jasmineintra disc_supp_vec=$DISCSUPPVEC --append
+  java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.survivor_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=survivor disc_supp_vec=$DISCSUPPVEC --append
+  java -cp $JASMINE_PATH/src:$BINDIR/src CountMergingErrors table_file=$WORKINGDIR/$OUTPREFIX.svimmer_simple.txt vcf_filelist=$FILELIST out_file=$ERRORSFILE software=svimmer disc_supp_vec=$DISCSUPPVEC --append
+fi
+
+
