@@ -16,6 +16,7 @@ public class BuildMergingTable
 	static String vcfFilelist = "";
 	static String ofn = "";
 	static String mode = "jasmine";
+	static String sampleList = "";
 	
 	static HashMap<String, Integer> sampleToIndex;
 	static HashMap<String, String>[] coordsToId;
@@ -72,6 +73,10 @@ public class BuildMergingTable
 				{
 					ofn = val;
 				}
+				else if(key.equalsIgnoreCase("sample_list"))
+				{
+					sampleList = val;
+				}
 				else if(key.equalsIgnoreCase("mode"))
 				{
 					mode = val;
@@ -86,11 +91,17 @@ public class BuildMergingTable
 			System.exit(0);
 		}
 		
-		if(!mode.equals("jasmine") && !mode.equals("survivor") && !mode.equals("svtools") && !mode.equals("svimmer") && !mode.equals("jasmine_intra"))
+		if(!mode.equals("jasmine") && !mode.equals("survivor") && !mode.equals("svtools") && !mode.equals("svimmer") && !mode.equals("jasmine_intra")
+				&& !mode.equals("svpop"))
 		{
 			usage();
 			System.exit(0);
-		}		
+		}	
+		if(mode.equals("svpop") && sampleList.length() == 0)
+		{
+			usage();
+			System.exit(0);
+		}
 	}
 	
 	/*
@@ -107,7 +118,8 @@ public class BuildMergingTable
 
 		System.out.println();
 		System.out.println("Optional args:");
-		System.out.println("  mode (String) [jasmine] - the merging software used: jasmine, survivor, svtools, or svimmer");
+		System.out.println("  mode       (String) [jasmine] - the merging software used: jasmine, survivor, svtools, jasmine_intra, svpop, or svimmer");
+		System.out.println("  sample_list (String) []        - comma-separated list of sample names in same order as in table - required when using svpop");
 		System.out.println();
 	}
 	
@@ -163,14 +175,31 @@ public class BuildMergingTable
 		
 		ArrayList<SimpleMergedVariant> variants = new ArrayList<SimpleMergedVariant>();
 		
+		String headerLine = "";
+		
 		while(input.hasNext())
 		{
 			String line = input.nextLine();
-			if(line.length() == 0 || line.startsWith("#"))
+			
+			if(mode.equals("svpop"))
 			{
-				continue;
+				if(headerLine.length() == 0)
+				{
+					headerLine = line;
+				}
+				else
+				{
+					variants.add(new SimpleMergedVariant(headerLine, line));
+				}
 			}
-			variants.add(new SimpleMergedVariant(new VcfEntry(line)));
+			else
+			{
+				if(line.length() == 0 || line.startsWith("#"))
+				{
+					continue;
+				}
+				variants.add(new SimpleMergedVariant(new VcfEntry(line)));
+			}
 		}
 		
 		Collections.sort(variants);
@@ -335,6 +364,55 @@ public class BuildMergingTable
 		return new ArrayList<String>();
 	}
 	
+	static ArrayList<String> getSvPopIds(String headerLine, String line)
+	{
+		HashMap<String, Integer> sampleToIndexMap = new HashMap<String, Integer>();
+		String[] samples = sampleList.split(",");
+		int numSamples = samples.length;
+		for(int i = 0; i<numSamples; i++)
+		{
+			sampleToIndexMap.put(samples[i], i);
+		}
+		
+		ArrayList<String> res = new ArrayList<String>();
+		String[] headerTokens = headerLine.split("\t");
+		int sampleIndex = -1, idIndex = -1;
+		for(int i = 0; i<headerTokens.length; i++)
+		{
+			if(headerTokens[i].equals("MERGE_SAMPLES"))
+			{
+				sampleIndex = i;
+			}
+			else if(headerTokens[i].equals("MERGE_VARIANTS"))
+			{
+				idIndex = i;
+			}
+		}
+		if(sampleIndex == -1 || idIndex == -1)
+		{
+			return res;
+		}
+		String[] tokens = line.split("\t");
+		samples = tokens[sampleIndex].split(",");
+		String[] ids = tokens[idIndex].split(",");
+		String[] outputTokens = new String[numSamples];
+		for(int i = 0; i<outputTokens.length; i++)
+		{
+			outputTokens[i] = "";
+		}
+		//Arrays.fill(outputTokens, ".");
+		for(int i = 0; i<ids.length; i++)
+		{
+			int sample = sampleToIndexMap.get(samples[i]);
+			outputTokens[sample] = ids[i].substring(1 + ids[i].lastIndexOf('-'));
+		}
+		for(int i = 0; i<numSamples; i++)
+		{
+			res.add(outputTokens[i]);
+		}
+		return res;
+	}
+	
 	/*
 	 * Representation of which input IDs make up a merged variant
 	 */
@@ -342,6 +420,10 @@ public class BuildMergingTable
 	{
 		static int index;
 		ArrayList<String> ids;
+		SimpleMergedVariant(String headerLine, String line)
+		{
+			ids = getSvPopIds(headerLine, line);
+		}
 		SimpleMergedVariant(VcfEntry entry) throws Exception
 		{
 			ids = getIds(entry);

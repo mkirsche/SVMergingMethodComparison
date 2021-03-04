@@ -6,4 +6,5 @@ output/
 .classpath
 .project
 .settings/
-
+*.bed
+*.ong
