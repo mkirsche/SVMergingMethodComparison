@@ -7,4 +7,6 @@ output/
 .project
 .settings/
 *.bed
-*.ong
+*.png
+intra*/
+jasmine_disc/
