@@ -72,7 +72,7 @@ public class CountMergingErrors
 	static void usage()
 	{
 		System.out.println();
-		System.out.println("Usage: java -cp src AugmentMergingTable [args]");
+		System.out.println("Usage: java -cp src CountMergingErrors [args]");
 		System.out.println("Required args:");
 		System.out.println("  table_file    (String) - the TSV built from the BuildMergingTable script");
 		System.out.println("  vcf_filelist  (String) - a txt file with each line containing the filename of a merged vcf");

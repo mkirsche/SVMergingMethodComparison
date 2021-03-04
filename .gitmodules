@@ -1,3 +1,6 @@
 [submodule "Jasmine_utils"]
 	path = Jasmine_utils
 	url = https://github.com/aganezov/Jasmine_utils.git
+[submodule "svpop"]
+	path = svpop
+	url = https://github.com/mkirsche/svpop.git
