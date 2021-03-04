@@ -53,7 +53,7 @@ then
     echo 'Running svtools'
     svtools lsort -r -f $svtoolslist > $WORKINGDIR/$OUTPREFIX.svtools.lsort.vcf
 
-    svtools lmerge -i $WORKINGDIR/$OUTPREFIX.svtools.lsort.vcf -f 1000 > $WORKINGDIR/$OUTPREFIX.svtools.lmerge.vcf
+    svtools lmerge -i $WORKINGDIR/$OUTPREFIX.svtools.lsort.vcf -f 250 > $WORKINGDIR/$OUTPREFIX.svtools.lmerge.vcf
 
     awk '($0 !~ /MATEID=[^;]+_1;/)' $OUTPREFIX.svtools.lmerge.vcf > $WORKINGDIR/$OUTPREFIX.svtools.vcf
 
