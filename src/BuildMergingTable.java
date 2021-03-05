@@ -383,7 +383,7 @@ public class BuildMergingTable
 			{
 				sampleIndex = i;
 			}
-			else if(headerTokens[i].equals("MERGE_VARIANTS"))
+			else if(headerTokens[i].equals("MERGE_IDLIST"))
 			{
 				idIndex = i;
 			}
