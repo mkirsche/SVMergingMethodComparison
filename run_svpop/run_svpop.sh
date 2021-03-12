@@ -9,7 +9,7 @@ SVPOPANALYSISPATH=$BINDIR'/../src'
 
 javac -cp $JASMINESRCPATH $SVPOPANALYSISPATH/*.java
 
-WORKINGDIR=`pwd`
+WORKINGDIR=$4
 
 names=''
 tablefilelist=$WORKINGDIR/$prefix'_'tablefilelist.txt
