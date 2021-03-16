@@ -181,6 +181,8 @@ public class AugmentMergingTable
 		
 		boolean isSpecific = false;
 		boolean isPrecise = false;
+
+		int specificCount = 0;
 		
 		boolean reducesDiscordance = false;
 		
@@ -285,6 +287,7 @@ public class AugmentMergingTable
 			
 			if(entry.hasInfoField("IS_SPECIFIC") && entry.getInfo("IS_SPECIFIC").equals("1"))
 			{
+				specificCount++;
 				isSpecific = true;
 			}
 			
@@ -369,6 +372,7 @@ public class AugmentMergingTable
 			res.append("\t" + "SPECIFIC_FLAG");
 			res.append("\t" + "PRECISE_FLAG");
 			res.append("\t" + "NUMVARS");
+			res.append("\t" + "SPECIFIC_COUNT");
 			return res.toString();
 		}
 		
@@ -395,6 +399,7 @@ public class AugmentMergingTable
 			res.append("\t" + (isSpecific ? 1 : 0));
 			res.append("\t" + (isPrecise ? 1 : 0));
 			res.append("\t" + numVars);
+			res.append("\t" + specificCount);
 			return res.toString();
 		}
 	}
