@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
 
-public class AugmentMergingTable
+public class AugmentMergingTableWithAnnotations
 {
 	static String tableFn = "";
 	static String vcfFilelist = "";
@@ -167,6 +167,7 @@ public class AugmentMergingTable
 		String index;
 		ArrayList<String> ids;
 		HashSet<Integer> specificSampleSet;
+		HashSet<String> annotations;
 		String suppVec;
 		int supp;
 		
@@ -187,6 +188,11 @@ public class AugmentMergingTable
 		int specificCount = 0;
 		
 		boolean reducesDiscordance = false;
+		
+		boolean inCentromere = false;
+		boolean inRepeat = false;
+		boolean inGene = false;
+		boolean inExon = false;
 		
 		void updateDiscordanceReduction(VcfEntry entry) throws Exception
 		{
@@ -336,7 +342,7 @@ public class AugmentMergingTable
 			ids = new ArrayList<String>();
 			specificSampleSet = new HashSet<Integer>();
 			StringBuilder suppVecBuilder = new StringBuilder("");
-			for(int i = 1; i<tokens.length; i++)
+			for(int i = 1; i<tokens.length - 1; i++)
 			{
 				boolean isPresent = !tokens[i].equals(".");
 				ids.add(isPresent ? tokens[i] : "");
@@ -351,6 +357,25 @@ public class AugmentMergingTable
 				}
 			}
 			suppVec = suppVecBuilder.toString();
+			
+			annotations = new HashSet<String>();
+			String[] annotationArray = tokens[tokens.length - 1].split(",");
+			for(String s : annotationArray)
+			{
+				annotations.add(s);
+			}
+			
+			inGene = annotations.contains("GENE_gene");
+			inExon = annotations.contains("GENE_exon");
+			inRepeat = false;
+			for(String s : annotations)
+			{
+				if(s.startsWith("REPEAT_"))
+				{
+					inRepeat = true;
+				}
+			}
+			inCentromere = annotations.contains("CENTROMERE");
 		}
 		
 		static String makeHeader(ArrayList<String> filenames)
@@ -378,6 +403,10 @@ public class AugmentMergingTable
 			res.append("\t" + "NUMVARS");
 			res.append("\t" + "SPECIFIC_COUNT");
 			res.append("\t" + "SPECIFIC_SAMPLES");
+			res.append("\t" + "GENE_FLAG");
+			res.append("\t" + "EXON_FLAG");
+			res.append("\t" + "REPEAT_FLAG");
+			res.append("\t" + "CENTROMERE_FLAG");
 			return res.toString();
 		}
 		
@@ -406,6 +435,10 @@ public class AugmentMergingTable
 			res.append("\t" + numVars);
 			res.append("\t" + specificCount);
 			res.append("\t" + specificSampleSet.size());
+			res.append("\t" + (inGene ? 1 : 0));
+			res.append("\t" + (inExon ? 1 : 0));
+			res.append("\t" + (inRepeat ? 1 : 0));
+			res.append("\t" + (inCentromere ? 1 : 0));
 			return res.toString();
 		}
 	}

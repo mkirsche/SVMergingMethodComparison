@@ -148,7 +148,7 @@ public class CountMergingErrors
 				if(componentMap[i].containsKey(id))
 				{
 					int mergedIndex = componentMap[i].get(id);
-					variantList.get(mergedIndex).integrateVariant(entry);
+					variantList.get(mergedIndex).integrateVariant(entry, i);
 					if(discSuppVec.length() > 0 && i == discSuppVec.indexOf('1'))
 					{
 						variantList.get(mergedIndex).updateDiscordanceReduction(entry);
@@ -157,7 +157,7 @@ public class CountMergingErrors
 				else if(id.startsWith("0_") && componentMap[i].containsKey(id.substring(2)))
 				{
 					int mergedIndex = componentMap[i].get(id.substring(2));
-					variantList.get(mergedIndex).integrateVariant(entry);
+					variantList.get(mergedIndex).integrateVariant(entry, i);
 					if(discSuppVec.length() > 0 && i == discSuppVec.indexOf('1'))
 					{
 						variantList.get(mergedIndex).updateDiscordanceReduction(entry);
