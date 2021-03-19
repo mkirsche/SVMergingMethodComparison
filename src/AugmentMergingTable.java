@@ -305,7 +305,7 @@ public class AugmentMergingTable
 				boolean longEnough = entry.getType().equals("TRA") || entry.getType().equals("BND") || 
 						Math.abs(entry.getLength()) >= specificLength || entry.getLength() == 0;
 				
-				if(readSupport >= specificLength && longEnough)
+				if(readSupport >= specificReads && longEnough)
 				{
 					inSpecific = true;
 				}
