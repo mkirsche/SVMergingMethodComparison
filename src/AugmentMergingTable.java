@@ -12,6 +12,8 @@ public class AugmentMergingTable
 	static String vcfFilelist = "";
 	static String ofn = "";
 		
+	static int specificReads = -1;
+	static int specificLength = -1;
 	/*
 	 * Parse command line arguments
 	 */
@@ -40,11 +42,19 @@ public class AugmentMergingTable
 				{
 					ofn = val;
 				}
+				else if(key.equalsIgnoreCase("specific_reads"))
+				{
+					specificReads = Integer.parseInt(val);
+				}
+				else if(key.equalsIgnoreCase("specific_length"))
+				{
+					specificLength = Integer.parseInt(val);
+				}
 			}
 			
 		}
 		
-		if(tableFn.length() == 0 || ofn.length() == 0 || vcfFilelist.length() == 0)
+		if(tableFn.length() == 0 || ofn.length() == 0 || vcfFilelist.length() == 0 || ((specificReads == -1) ^ (specificLength == -1)))
 		{
 			usage();
 			System.exit(0);
@@ -62,9 +72,10 @@ public class AugmentMergingTable
 		System.out.println("  table_file   (String) - the TSV built from the BuildMergingTable script");
 		System.out.println("  out_file     (String) - the name of the file to output the merging table to");
 		System.out.println("  vcf_filelist (String) - a txt file with each line containing the filename of a merged vcf");
-
 		System.out.println();
 		System.out.println("Optional args:");
+		System.out.println("  specific_reads  (int) [-1] - updated read support threshold for specific");
+		System.out.println("  specific_length (int) [-1] - updated length threshold for specific");
 		System.out.println();
 	}
 	
@@ -287,8 +298,22 @@ public class AugmentMergingTable
 				numMinusPlus++;
 			}
 			
+			if(specificLength != -1)
+			{
+				boolean inSpecific = false;
+				int readSupport = entry.getReadSupport();
+				boolean longEnough = entry.getType().equals("TRA") || entry.getType().equals("BND") || 
+						Math.abs(entry.getLength()) >= specificLength || entry.getLength() == 0;
+				
+				if(readSupport >= specificLength && longEnough)
+				{
+					inSpecific = true;
+				}
+				entry.setInfo("IS_SPECIFIC", inSpecific ? "1": "0");
+			}
 			if(entry.hasInfoField("IS_SPECIFIC") && entry.getInfo("IS_SPECIFIC").equals("1"))
 			{
+				
 				specificCount++;
 				specificSampleSet.add(sampleNum);
 				isSpecific = true;
