@@ -158,7 +158,7 @@ public class BuildMergingTable
 	{
 		parseArgs(args);
 		
-		if(mode.equals("svtools") || mode.equals("svimmer"))
+		if(mode.equals("svtools") || mode.equals("svimmer") || mode.equals("dbsvmerge"))
 		{		
 			buildSampleMap();
 		}
@@ -177,6 +177,9 @@ public class BuildMergingTable
 		
 		String headerLine = "";
 		
+		String lastId = "";
+		ArrayList<String> dbSamples = new ArrayList<String>(), dbIds = new ArrayList<String>();
+		
 		while(input.hasNext())
 		{
 			String line = input.nextLine();
@@ -191,6 +194,34 @@ public class BuildMergingTable
 				{
 					variants.add(new SimpleMergedVariant(headerLine, line));
 				}
+			}
+			else if(mode.equals("dbsvmerge"))
+			{
+				String[] tokens = line.split("\t");
+				String id = tokens[0];
+				String sample = tokens[7];
+				String varId = tokens[8];
+				if(lastId.equals(id))
+				{
+					dbSamples.add(sample);
+					dbIds.add(varId);
+				}
+				if(!lastId.equals(id) || !input.hasNext())
+				{
+					if(dbSamples.size() > 0)
+					{
+						variants.add(new SimpleMergedVariant(dbSamples, dbIds));
+					}
+					
+					if(input.hasNext())
+					{
+						dbSamples = new ArrayList<String>();
+						dbSamples.add(sample);
+						dbIds = new ArrayList<String>();
+						dbIds.add(varId);
+					}
+				}
+				lastId = id;
 			}
 			else
 			{
@@ -420,6 +451,24 @@ public class BuildMergingTable
 	{
 		static int index;
 		ArrayList<String> ids;
+		SimpleMergedVariant(ArrayList<String> dbSamples, ArrayList<String> dbIds)
+		{
+			String[] outputTokens = new String[sampleToIndex.size()];
+			for(int i = 0; i<outputTokens.length; i++)
+			{
+				outputTokens[i] = "";
+			}
+			for(int i = 0; i < dbSamples.size(); i++)
+			{
+				int index = sampleToIndex.get(dbSamples.get(i));
+				outputTokens[index] = dbIds.get(i);
+			}
+			ids = new ArrayList<String>();
+			for(int i = 0; i<outputTokens.length; i++)
+			{
+				ids.add(outputTokens[i]);
+			}
+		}
 		SimpleMergedVariant(String headerLine, String line)
 		{
 			ids = getSvPopIds(headerLine, line);
