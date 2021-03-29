@@ -92,7 +92,7 @@ public class BuildMergingTable
 		}
 		
 		if(!mode.equals("jasmine") && !mode.equals("survivor") && !mode.equals("svtools") && !mode.equals("svimmer") && !mode.equals("jasmine_intra")
-				&& !mode.equals("svpop"))
+				&& !mode.equals("svpop") && !mode.equals("dbsvmerge"))
 		{
 			usage();
 			System.exit(0);
@@ -118,7 +118,7 @@ public class BuildMergingTable
 
 		System.out.println();
 		System.out.println("Optional args:");
-		System.out.println("  mode       (String) [jasmine] - the merging software used: jasmine, survivor, svtools, jasmine_intra, svpop, or svimmer");
+		System.out.println("  mode       (String) [jasmine] - the merging software used: jasmine, survivor, svtools, jasmine_intra, svpop, dbsvmerge, or svimmer");
 		System.out.println("  sample_list (String) []        - comma-separated list of sample names in same order as in table - required when using svpop");
 		System.out.println();
 	}
