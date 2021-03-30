@@ -4,3 +4,6 @@
 [submodule "svpop"]
 	path = svpop
 	url = https://github.com/mkirsche/svpop.git
+[submodule "svmerge"]
+	path = svmerge
+	url = https://github.com/GrandOmics/svmerge.git
