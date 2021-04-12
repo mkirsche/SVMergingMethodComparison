@@ -1,19 +1,25 @@
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
 
-public class AugmentMergingTable
+public class CountNonoverlappingMerges
 {
 	static String tableFn = "";
 	static String vcfFilelist = "";
+	static String discSuppVec = "";
 	static String ofn = "";
-		
+	static String software = ".";
+	static boolean append = false;
+	
 	static int specificReads = -1;
 	static int specificLength = -1;
+		
 	/*
 	 * Parse command line arguments
 	 */
@@ -24,7 +30,10 @@ public class AugmentMergingTable
 			int equalsIdx = arg.indexOf('=');
 			if(equalsIdx == -1)
 			{
-				
+				if(arg.toLowerCase().endsWith("append"))
+				{
+					append = true;
+				}
 			}
 			else
 			{
@@ -38,23 +47,23 @@ public class AugmentMergingTable
 				{
 					vcfFilelist = val;
 				}
+				else if(key.equalsIgnoreCase("disc_supp_vec"))
+				{
+					discSuppVec = val;
+				}
 				else if(key.equalsIgnoreCase("out_file"))
 				{
 					ofn = val;
 				}
-				else if(key.equalsIgnoreCase("specific_reads"))
+				else if(key.equalsIgnoreCase("software"))
 				{
-					specificReads = Integer.parseInt(val);
-				}
-				else if(key.equalsIgnoreCase("specific_length"))
-				{
-					specificLength = Integer.parseInt(val);
+					software = val;
 				}
 			}
 			
 		}
 		
-		if(tableFn.length() == 0 || ofn.length() == 0 || vcfFilelist.length() == 0 || ((specificReads == -1) ^ (specificLength == -1)))
+		if(tableFn.length() == 0 || vcfFilelist.length() == 0)
 		{
 			usage();
 			System.exit(0);
@@ -67,15 +76,17 @@ public class AugmentMergingTable
 	static void usage()
 	{
 		System.out.println();
-		System.out.println("Usage: java -cp src AugmentMergingTable [args]");
+		System.out.println("Usage: java -cp src CountMergingErrors [args]");
 		System.out.println("Required args:");
-		System.out.println("  table_file   (String) - the TSV built from the BuildMergingTable script");
-		System.out.println("  out_file     (String) - the name of the file to output the merging table to");
-		System.out.println("  vcf_filelist (String) - a txt file with each line containing the filename of a merged vcf");
+		System.out.println("  table_file    (String) - the TSV built from the BuildMergingTable script");
+		System.out.println("  vcf_filelist  (String) - a txt file with each line containing the filename of a merged vcf");
+
 		System.out.println();
 		System.out.println("Optional args:");
-		System.out.println("  specific_reads  (int) [-1] - updated read support threshold for specific");
-		System.out.println("  specific_length (int) [-1] - updated length threshold for specific");
+		System.out.println("  disc_supp_vec (String) - the support vector corresponding to discordant reads");
+		System.out.println("  out_file      (String) - where to write results in table format");
+		System.out.println("  software  [.] (String) - which merging software to list in the table (if table is produced)");
+		System.out.println("  --append               - append to an existing table instead of making a new one");
 		System.out.println();
 	}
 	
@@ -87,7 +98,6 @@ public class AugmentMergingTable
 		ArrayList<String> filenames = PipelineManager.getFilesFromList(vcfFilelist);
 		
 		Scanner input = new Scanner(new FileInputStream(new File(tableFn)));
-		PrintWriter out = new PrintWriter(new File(ofn));
 				
 		// A list of all merged variants
 		ArrayList<DetailedMergedVariant> variantList = new ArrayList<DetailedMergedVariant>();
@@ -100,7 +110,7 @@ public class AugmentMergingTable
 			componentMap[i] = new HashMap<String, Integer>();
 		}
 		
-		input.nextLine(); // TODO get the filenames from here instead of filelist
+		input.nextLine();
 				
 		while(input.hasNext())
 		{
@@ -143,11 +153,19 @@ public class AugmentMergingTable
 				{
 					int mergedIndex = componentMap[i].get(id);
 					variantList.get(mergedIndex).integrateVariant(entry, i);
+					if(discSuppVec.length() > 0 && i == discSuppVec.indexOf('1'))
+					{
+						variantList.get(mergedIndex).updateDiscordanceReduction(entry);
+					}
 				}
 				else if(id.startsWith("0_") && componentMap[i].containsKey(id.substring(2)))
 				{
 					int mergedIndex = componentMap[i].get(id.substring(2));
 					variantList.get(mergedIndex).integrateVariant(entry, i);
+					if(discSuppVec.length() > 0 && i == discSuppVec.indexOf('1'))
+					{
+						variantList.get(mergedIndex).updateDiscordanceReduction(entry);
+					}
 				}
 				else
 				{
@@ -156,23 +174,101 @@ public class AugmentMergingTable
 			}
 		}
 		
-		// Output header
-		out.println(DetailedMergedVariant.makeHeader(filenames));
+		int badStrand = 0, badType = 0, badBoth = 0;
+		int badStrandDiscordant = 0, badTypeDiscordant = 0, badBothDiscordant = 0;
+		int nonoverlap = 0, nonoverlapDiscordant = 0;
 		
 		// Output info for each merged variant
 		for(DetailedMergedVariant v : variantList)
 		{
 			v.finalizeVariant();
-			out.println(v);
+			int totalStrand = v.numPlusMinus + v.numPlusPlus + v.numMinusMinus + v.numMinusPlus;
+			int maxStrand = Math.max(Math.max(v.numPlusMinus, v.numPlusPlus), Math.max(v.numMinusMinus, v.numMinusPlus));
+			
+			int totalType = v.numIns + v.numDel + v.numInv + v.numDup + v.numTra;
+			int maxType = Math.max(Math.max(Math.max(v.numIns, v.numDel), Math.max(v.numInv, v.numDup)), v.numTra);
+			
+			if(totalType != maxType && totalStrand != maxStrand)
+			{
+				badBoth++;
+				if(v.reducesDiscordance)
+				{
+					badBothDiscordant++;
+				}
+			}
+			else if(totalStrand != maxStrand)
+			{
+				badStrand++;
+				if(v.reducesDiscordance)
+				{
+					badStrandDiscordant++;
+				}
+			}
+			else if(totalType != maxType)
+			{
+				badType++;
+				if(v.reducesDiscordance)
+				{
+					badTypeDiscordant++;
+				}
+			}
+			else if(!v.overlap)
+			{
+				nonoverlap++;
+				if(v.reducesDiscordance)
+				{
+					nonoverlapDiscordant++;
+				}
+			}
+			
 		}
 		
+		System.out.println();
+		System.out.println("Errors for " + software);
 		
-		out.close();
+		System.out.println("Mixed strand and type: " + badBoth);
+		System.out.println("Mixed strand only: " + badStrand);
+		System.out.println("Mixed type only: " + badType);
+		System.out.println("Non-overlapping merges: " + nonoverlap);
+		
+		if(discSuppVec.length() > 0)
+		{
+			System.out.println("Mixed strand and type affecting discordance: " + badBothDiscordant);
+			System.out.println("Mixed strand only affecting discordance: " + badStrandDiscordant);
+			System.out.println("Mixed type only affecting discordance: " + badTypeDiscordant);
+			System.out.println("Non-overlapping merges affecting discordance: " + nonoverlapDiscordant);
+
+		}
+		
+		System.out.println();
+		
+		if(ofn.length() > 0)
+		{
+			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(ofn, append)));
+			
+			// Print header if making a new table
+			if(!append)
+			{
+				out.print("SOFTWARE\tMIXED_STRAND_AND_TYPE\tMIXED_STRAND_ONLY\tMIXED_TYPE_ONLY\tNONOVERLAP");
+				if(discSuppVec.length() > 0)
+				{
+					out.print("\tDISC_MIXED_STRAND_AND_TYPE\tDISC_MIXED_STRAND_ONLY\tDISC_MIXED_TYPE_ONLY\tDISC_NONOVERLAP");
+				}
+				out.println();
+			}
+			
+			// Print statistics for this software
+			out.print(software + "\t" + badBoth + "\t" + badStrand + "\t" + badType + "\t" + nonoverlap);
+			if(discSuppVec.length() > 0)
+			{
+				out.print("\t" + badBothDiscordant + "\t" + badStrandDiscordant + "\t" + badTypeDiscordant + "\t" + nonoverlapDiscordant);
+			}
+			out.println();
+			out.close();
+		}
+		
 	}
 	
-	/*
-	 * A representation of which input variants make up a merged variant, with additional details and stats 
-	 */
 	static class DetailedMergedVariant
 	{
 		String index;
