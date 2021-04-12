@@ -177,7 +177,7 @@ public class CountNonoverlappingMerges
 		int badStrand = 0, badType = 0, badBoth = 0;
 		int badStrandDiscordant = 0, badTypeDiscordant = 0, badBothDiscordant = 0;
 		int nonoverlap = 0, nonoverlapDiscordant = 0;
-		int ism = 0, ismDiscordant = 0;
+		int ism = 0, ismDiscordant = 0, ismCombinedDisc = 0;
 		
 		// Output info for each merged variant
 		for(DetailedMergedVariant v : variantList)
@@ -219,6 +219,10 @@ public class CountNonoverlappingMerges
 				if(v.reducesDiscordance)
 				{
 					ismDiscordant++;
+				}
+				if(v.suppVec.equals(discSuppVec))
+				{
+					ismCombinedDisc+= v.numVars - 1;
 				}
 			}
 			else if(v.numVars > 1 && !v.overlap)
@@ -263,7 +267,7 @@ public class CountNonoverlappingMerges
 				out.print("SOFTWARE\tMIXED_STRAND_AND_TYPE\tMIXED_STRAND_ONLY\tMIXED_TYPE_ONLY\tNONOVERLAP\tISM");
 				if(discSuppVec.length() > 0)
 				{
-					out.print("\tDISC_MIXED_STRAND_AND_TYPE\tDISC_MIXED_STRAND_ONLY\tDISC_MIXED_TYPE_ONLY\tDISC_NONOVERLAP\tDISC_ISM");
+					out.print("\tDISC_MIXED_STRAND_AND_TYPE\tDISC_MIXED_STRAND_ONLY\tDISC_MIXED_TYPE_ONLY\tDISC_NONOVERLAP\tDISC_ISM\tDISC_COMBINED_ISM");
 				}
 				out.println();
 			}
@@ -272,7 +276,8 @@ public class CountNonoverlappingMerges
 			out.print(software + "\t" + badBoth + "\t" + badStrand + "\t" + badType + "\t" + nonoverlap + "\t" + ism);
 			if(discSuppVec.length() > 0)
 			{
-				out.print("\t" + badBothDiscordant + "\t" + badStrandDiscordant + "\t" + badTypeDiscordant + "\t" + nonoverlapDiscordant + "\t" + ismDiscordant);
+				out.print("\t" + badBothDiscordant + "\t" + badStrandDiscordant + "\t" + badTypeDiscordant + "\t" + nonoverlapDiscordant + 
+						"\t" + ismDiscordant + "\t" + ismCombinedDisc);
 			}
 			out.println();
 			out.close();
