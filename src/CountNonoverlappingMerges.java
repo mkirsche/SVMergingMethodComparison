@@ -212,7 +212,7 @@ public class CountNonoverlappingMerges
 					badTypeDiscordant++;
 				}
 			}
-			else if(!v.overlap)
+			else if(v.numVars > 1 && !v.overlap)
 			{
 				nonoverlap++;
 				if(v.reducesDiscordance)
