@@ -361,7 +361,7 @@ public class AugmentMergingTable
 			ids = new ArrayList<String>();
 			specificSampleSet = new HashSet<Integer>();
 			StringBuilder suppVecBuilder = new StringBuilder("");
-			for(int i = 1; i<tokens.length; i++)
+			for(int i = 1; i<1+filenames.size(); i++)
 			{
 				boolean isPresent = !tokens[i].equals(".");
 				ids.add(isPresent ? tokens[i] : "");
