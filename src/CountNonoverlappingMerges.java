@@ -177,6 +177,7 @@ public class CountNonoverlappingMerges
 		int badStrand = 0, badType = 0, badBoth = 0;
 		int badStrandDiscordant = 0, badTypeDiscordant = 0, badBothDiscordant = 0;
 		int nonoverlap = 0, nonoverlapDiscordant = 0;
+		int ism = 0, ismDiscordant = 0;
 		
 		// Output info for each merged variant
 		for(DetailedMergedVariant v : variantList)
@@ -212,12 +213,20 @@ public class CountNonoverlappingMerges
 					badTypeDiscordant++;
 				}
 			}
+			else if(v.numVars > v.supp)
+			{
+				ism++;
+				if(v.reducesDiscordance)
+				{
+					nonoverlapDiscordant++;
+				}
+			}
 			else if(v.numVars > 1 && !v.overlap)
 			{
 				nonoverlap++;
 				if(v.reducesDiscordance)
 				{
-					nonoverlapDiscordant++;
+					ismDiscordant++;
 				}
 			}
 			
@@ -230,6 +239,8 @@ public class CountNonoverlappingMerges
 		System.out.println("Mixed strand only: " + badStrand);
 		System.out.println("Mixed type only: " + badType);
 		System.out.println("Non-overlapping merges: " + nonoverlap);
+		System.out.println("Intrasample merges: " + ism);
+
 		
 		if(discSuppVec.length() > 0)
 		{
@@ -237,7 +248,7 @@ public class CountNonoverlappingMerges
 			System.out.println("Mixed strand only affecting discordance: " + badStrandDiscordant);
 			System.out.println("Mixed type only affecting discordance: " + badTypeDiscordant);
 			System.out.println("Non-overlapping merges affecting discordance: " + nonoverlapDiscordant);
-
+			System.out.println("Intrasample merges affecting discordance: " + ismDiscordant);
 		}
 		
 		System.out.println();
@@ -249,19 +260,19 @@ public class CountNonoverlappingMerges
 			// Print header if making a new table
 			if(!append)
 			{
-				out.print("SOFTWARE\tMIXED_STRAND_AND_TYPE\tMIXED_STRAND_ONLY\tMIXED_TYPE_ONLY\tNONOVERLAP");
+				out.print("SOFTWARE\tMIXED_STRAND_AND_TYPE\tMIXED_STRAND_ONLY\tMIXED_TYPE_ONLY\tNONOVERLAP\tISM");
 				if(discSuppVec.length() > 0)
 				{
-					out.print("\tDISC_MIXED_STRAND_AND_TYPE\tDISC_MIXED_STRAND_ONLY\tDISC_MIXED_TYPE_ONLY\tDISC_NONOVERLAP");
+					out.print("\tDISC_MIXED_STRAND_AND_TYPE\tDISC_MIXED_STRAND_ONLY\tDISC_MIXED_TYPE_ONLY\tDISC_NONOVERLAP\tDISC_ISM");
 				}
 				out.println();
 			}
 			
 			// Print statistics for this software
-			out.print(software + "\t" + badBoth + "\t" + badStrand + "\t" + badType + "\t" + nonoverlap);
+			out.print(software + "\t" + badBoth + "\t" + badStrand + "\t" + badType + "\t" + nonoverlap + "\t" + ism);
 			if(discSuppVec.length() > 0)
 			{
-				out.print("\t" + badBothDiscordant + "\t" + badStrandDiscordant + "\t" + badTypeDiscordant + "\t" + nonoverlapDiscordant);
+				out.print("\t" + badBothDiscordant + "\t" + badStrandDiscordant + "\t" + badTypeDiscordant + "\t" + nonoverlapDiscordant + "\t" + ismDiscordant);
 			}
 			out.println();
 			out.close();
