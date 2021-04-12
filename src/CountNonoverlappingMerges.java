@@ -218,7 +218,7 @@ public class CountNonoverlappingMerges
 				ism++;
 				if(v.reducesDiscordance)
 				{
-					nonoverlapDiscordant++;
+					ismDiscordant++;
 				}
 			}
 			else if(v.numVars > 1 && !v.overlap)
@@ -226,7 +226,7 @@ public class CountNonoverlappingMerges
 				nonoverlap++;
 				if(v.reducesDiscordance)
 				{
-					ismDiscordant++;
+					nonoverlapDiscordant++;
 				}
 			}
 			
